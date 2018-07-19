@@ -12,56 +12,65 @@ var connection = mysql.createConnection({
 
 connection.connect(function (err) {
   if (err) throw err;
-  console.log("connected as id " + connection.threadId);
-  connection.end();
-  start();
+  display();
+})
+
+/*var table = new Table({
+  head: ['Id', 'Product Name', 'Price ($)', 'Dept', 'QTY'],
 });
 
-function display(res) {
-	var table = new Table({
-		head: ['Item ID', 'Product Name', 'Department', 'Cost', 'Stock']
-		, colWidths: [10, 45, 40, 8, 8]
-	});
-	for (var i = 0; i < res.length; i++) {
-		table.push([res[i].item_id, res[i].product_name, res[i].department_name, res[i].price, res[i].stock_quantity]);
-	}
-	console.log(table.toString());
+for (var i = 0; i < res.length; i++) {
+  var record = res[i];
+  table.push([record.item_id, record.product_name, record.price, record.department_name, record.stock_quantity]);
 }
+console.log(table.toString());*/
 
-var start = function() {
 
-  connection.query("SELECT * FROM products", function(err, res){
-    display(res);
-
-    var shop = [];
-    for ( var i = 0; i < res.length; i++) {
-      shop.push(res[i].product_name);
+var display = function () {
+  var query = 'SELECT * FROM products'
+  connection.query(query, function (err, res) {
+    for (var i = 0; i < res.length; i++) {
+      console.log("Item ID: " + res[i].item_id + " || Product: " + res[i].product_name + " || Department: " + res[i].department_name + " || Price: " + res[i].price + " || Stock: " + res[i].stock_quantity);
     }
-    inquirer.prompt([{
-      name: "Item",
-      type: "input",
-      message:"Which item are you interested in buying(please select its number)?"
-    },
-    {
-      name:"Quantity",
-      type:"input",
-      message:"How many are you interested in buying?"
-    }])
-    .then(function(answer){
-      console.log(answer);
-      var item = answer.item;
-      console.log(item);
-      var buying = res[item-1];
-      console.log(buying);
-      var update = buying.stock_quantity - answer.quantity;
-      if (update >= 0 ) {
-        connection.query('UPDATE products SET ? WHERE item_id = ?', [{stock_quantity:update }, item_id]);
-        start();
+    shop();
+  })
+};
+
+var shop = function () {
+  inquirer.prompt([{
+    name: "ProductID",
+    type: "input",
+    message: "What product are you interested in buying?(please select a number)?",
+    validate: function (value) {
+      if (isNaN(value) == false) {
+        return true;
+      } else {
+        return false;
       }
-      else {
-        console.log("I'm sorry but the quantity you have selected is not available. Please select a different amount. Thank you.");
-        start();
+    }
+  }, {
+    name: "Quantity",
+    type: "input",
+    message: "How many are you interested in buying?",
+    validate: function (value) {
+      if (isNaN(value) == false) {
+        return true;
+      } else {
+        return false;
       }
+    }
+  }]).then(function (answer) {
+
+    var query = 'SELECT * FROM Products WHERE item_ID=' + answer.Quantity;
+    connection.query(query, function (err, res) {
+      if (answer.Quantity <= res) {
+        for (var i = 0; i < res.length; i++) {
+          console.log("Thank you! Your order of " + res[i].stock_quantity + " " + res[i].product_name + " is on its way!.");
+        }
+      } else {
+        console.log("Quantity not available, please try again");
+      }
+      display();
     })
   })
-}
+};
